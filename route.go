@@ -46,24 +46,16 @@ func (route *Route) GetRoute() string {
 	return fmt.Sprintf("%s %s", route.method, route.path)
 }
 
-// applies a set of all middlware to a route
-func (route *Route) applyMiddlware(w http.ResponseWriter, r *http.Request) *Error {
-	for _, middleware := range route.middlewares {
-		if err := middleware(w, r); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // return the http handler for the routes
 // handles the encoding (json,grpc...)
 //
 //nolint:errcheck // TODO: Error handling will be added in a future commit
 func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := NewContext(w, r)
+		ctx.SetMiddlewares(route.middlewares)
 		// handling middlewares
-		if err := route.applyMiddlware(w, r); err != nil {
+		if err := ctx.ApplyMiddlewares(); err != nil {
 			w.WriteHeader(err.code)
 			// TODO: handle error below
 			// have a default logger with the router
@@ -90,6 +82,7 @@ func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 func (route *Route) GetHandler() http.Handler {
 	return nil
 }
+
 func NewRoute(method HTTPMethod, path string, httpfunc HTTPFunc) (*Route, error) {
 	if path == "" {
 		path = "/"
