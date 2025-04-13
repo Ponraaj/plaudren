@@ -9,9 +9,9 @@ import (
 func TestRouter(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/")
-	testRouter.Get("/", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("ok"))
+	testRouter.Get("/", func(ctx *Context) (*Data, *Error) {
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("ok"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer.")
 		}
@@ -38,9 +38,9 @@ func TestRouter(t *testing.T) {
 func TestNestedRouter(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/test")
-	testRouter.Get("/", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("test"))
+	testRouter.Get("/", func(ctx *Context) (*Data, *Error) {
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("test"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
@@ -48,9 +48,9 @@ func TestNestedRouter(t *testing.T) {
 	})
 
 	nestedRouter := NewRouter("/")
-	nestedRouter.Get("/", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("nest"))
+	nestedRouter.Get("/", func(ctx *Context) (*Data, *Error) {
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("nest"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
@@ -92,9 +92,9 @@ func TestNestedRouter(t *testing.T) {
 func TestOtherMethods(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/test")
-	testRouter.Get("/", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("test"))
+	testRouter.Get("/", func(ctx *Context) (*Data, *Error) {
+		ctx.ResponseWriter.WriteHeader(http.StatusOK)
+		_, err := ctx.ResponseWriter.Write([]byte("test"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
@@ -102,9 +102,9 @@ func TestOtherMethods(t *testing.T) {
 	})
 
 	nestedRouter := NewRouter("/")
-	nestedRouter.Post("/", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("nest"))
+	nestedRouter.Post("/", func(ctx *Context) (*Data, *Error) {
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("nest"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
@@ -150,8 +150,8 @@ func (a *TestAPI) Register() {
 	a.Router.Get("/", a.TestHttpFunc)
 }
 
-func (a *TestAPI) TestHttpFunc(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-	_, err := w.Write([]byte("ok"))
+func (a *TestAPI) TestHttpFunc(ctx *Context) (*Data, *Error) {
+	_, err := ctx.ResponseWriter.Write([]byte("ok"))
 	if err != nil {
 		a.t.Log("[WARN] Could not write to response writer")
 	}

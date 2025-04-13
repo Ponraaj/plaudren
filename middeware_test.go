@@ -12,25 +12,26 @@ type MockReqMiddlewareBody struct {
 	Type int `json:"type"`
 }
 
-func MockMiddleware(_ http.ResponseWriter, r *http.Request) *Error {
+func MockMiddleware(ctx *Context) *Error {
 	body := MockReqMiddlewareBody{}
-	err := json.NewDecoder(r.Body).Decode(&body)
+	err := ctx.BindJSON(&body)
 	if err != nil {
-		return NewError("Could Not Decode Body").SetCode(http.StatusInternalServerError)
+		return ctx.AbortWithError("Could Not Decode Body", http.StatusInternalServerError)
 	}
 	if body.Type == 0 {
-		return NewError("test").SetCode(http.StatusInternalServerError)
+		return ctx.AbortWithError("test", http.StatusInternalServerError)
 	}
 
+	ctx.Next()
 	return nil
 }
 
 func TestMiddlewareRoute(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/")
-	testRouter.Post("/", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("ok"))
+	testRouter.Post("/", func(ctx *Context) (*Data, *Error) {
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("ok"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
@@ -73,17 +74,17 @@ func TestMiddlewareRoute(t *testing.T) {
 func TestMiddlewareRouter(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/").Use(MockMiddleware)
-	testRouter.Post("/ok", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("ok"))
+	testRouter.Post("/ok", func(ctx *Context) (*Data, *Error) {
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("ok"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
 		return nil, nil
 	})
-	testRouter.Post("/not-ok", func(w http.ResponseWriter, _ *http.Request) (*Data, *Error) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("ok"))
+	testRouter.Post("/not-ok", func(ctx *Context) (*Data, *Error) {
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("ok"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}

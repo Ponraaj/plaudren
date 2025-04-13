@@ -8,11 +8,10 @@ import (
 )
 
 // type of the function that handles the http request
-type HTTPFunc func(http.ResponseWriter, *http.Request) (*Data, *Error)
+type HTTPFunc func(*Context) (*Data, *Error)
 
 // type of the router which registers the functions
 type HTTPRouter interface {
-
 	// http methods
 	// the param func should implement the HTTPFunc interface
 	Get(string, HTTPFunc) HTTPRoute

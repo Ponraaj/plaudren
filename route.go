@@ -1,7 +1,6 @@
 package plaud
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -55,26 +54,24 @@ func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 		ctx := NewContext(w, r)
 		ctx.SetMiddlewares(route.middlewares)
 		// handling middlewares
-		if err := ctx.ApplyMiddlewares(); err != nil {
-			w.WriteHeader(err.code)
+		ctx.Next()
+		if len(ctx.Errors) > 0 {
+			err := ctx.Errors[len(ctx.Errors)-1]
 			// TODO: handle error below
 			// have a default logger with the router
-			json.NewEncoder(w).Encode(err)
-
+			ctx.JSON(err.code, err)
 			return
 		}
-		data, err := route.httpfunc(w, r)
+		data, err := route.httpfunc(ctx)
 		// dont ask y coz i don't
 		if err != nil {
-			w.WriteHeader(err.code)
 			// TODO: handle error below
 			// have a default logger with the router
-			json.NewEncoder(w).Encode(err)
+			ctx.JSON(err.code, err)
 		} else if data != nil {
-			w.WriteHeader(data.code)
 			// TODO: handle error below
 			// have a default logger with the router
-			json.NewEncoder(w).Encode(data)
+			ctx.JSON(data.code, data)
 		}
 	}
 }
