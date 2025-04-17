@@ -9,6 +9,7 @@ import (
 func TestRouter(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/")
+
 	testRouter.Get("/", func(ctx *Context) (*Data, *Error) {
 		ctx.Status(http.StatusOK)
 		_, err := ctx.Write([]byte("ok"))
@@ -38,6 +39,7 @@ func TestRouter(t *testing.T) {
 func TestNestedRouter(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/test")
+
 	testRouter.Get("/", func(ctx *Context) (*Data, *Error) {
 		ctx.Status(http.StatusOK)
 		_, err := ctx.Write([]byte("test"))
@@ -51,6 +53,7 @@ func TestNestedRouter(t *testing.T) {
 	nestedRouter.Get("/", func(ctx *Context) (*Data, *Error) {
 		ctx.Status(http.StatusOK)
 		_, err := ctx.Write([]byte("nest"))
+
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
@@ -149,6 +152,7 @@ type TestAPI struct {
 func (a *TestAPI) Register() {
 	a.Router.Get("/", a.TestHttpFunc)
 }
+
 
 func (a *TestAPI) TestHttpFunc(ctx *Context) (*Data, *Error) {
 	_, err := ctx.Write([]byte("ok"))
