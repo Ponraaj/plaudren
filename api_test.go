@@ -93,8 +93,8 @@ func TestOtherMethods(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/test")
 	testRouter.Get("/", func(ctx *Context) (*Data, *Error) {
-		ctx.ResponseWriter.WriteHeader(http.StatusOK)
-		_, err := ctx.ResponseWriter.Write([]byte("test"))
+		ctx.Status(http.StatusOK)
+		_, err := ctx.Write([]byte("test"))
 		if err != nil {
 			t.Log("[WARN] Could not write to response writer")
 		}
@@ -151,7 +151,7 @@ func (a *TestAPI) Register() {
 }
 
 func (a *TestAPI) TestHttpFunc(ctx *Context) (*Data, *Error) {
-	_, err := ctx.ResponseWriter.Write([]byte("ok"))
+	_, err := ctx.Write([]byte("ok"))
 	if err != nil {
 		a.t.Log("[WARN] Could not write to response writer")
 	}

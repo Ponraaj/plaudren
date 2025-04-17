@@ -52,7 +52,24 @@ func (route *Route) GetRoute() string {
 func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := NewContext(w, r)
-		ctx.SetMiddlewares(route.middlewares)
+
+		handlers := make([]MiddleWareFunc, len(route.middlewares)+1)
+		copy(handlers, route.middlewares)
+
+		handlers[len(route.middlewares)] = func(c *Context) *Error {
+			data, err := route.httpfunc(ctx)
+			if err != nil {
+				ctx.JSON(err.code, err)
+				return err
+			}
+
+			if data != nil {
+				ctx.JSON(data.code, data)
+			}
+
+			return nil
+		}
+		ctx.SetMiddlewares(handlers)
 		// handling middlewares
 		ctx.Next()
 		if len(ctx.Errors) > 0 {
@@ -60,18 +77,6 @@ func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 			// TODO: handle error below
 			// have a default logger with the router
 			ctx.JSON(err.code, err)
-			return
-		}
-		data, err := route.httpfunc(ctx)
-		// dont ask y coz i don't
-		if err != nil {
-			// TODO: handle error below
-			// have a default logger with the router
-			ctx.JSON(err.code, err)
-		} else if data != nil {
-			// TODO: handle error below
-			// have a default logger with the router
-			ctx.JSON(data.code, data)
 		}
 	}
 }

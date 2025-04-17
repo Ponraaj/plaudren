@@ -104,5 +104,7 @@ func (c *Context) JSON(code int, obj any) {
 	c.Status(code)
 	if err := json.NewEncoder(c.ResponseWriter).Encode(obj); err != nil {
 		c.Errors = append(c.Errors, NewError("Failed to encode JSON").SetCode(http.StatusInternalServerError))
+		c.AbortWithStatus(http.StatusInternalServerError)
 	}
+	c.Abort()
 }

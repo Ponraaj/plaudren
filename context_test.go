@@ -71,13 +71,9 @@ func TestJSON(t *testing.T) {
 		t.Fatalf("Failed to marshal json: %v", err)
 	}
 
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBuffer(jsonBody))
-	r.Header.Set("Context-Type", "application/json")
-
-	ctx := NewContext(w, r)
-
-	middleware := func(ctx *Context) *Error {
+	server := New(":8000")
+	testRouter := NewRouter("/")
+	testRouter.Get("/test", func(ctx *Context) (*Data, *Error) {
 		var data []Record
 		if err := ctx.BindJSON(&data); err != nil {
 			t.Fatalf("Failed to bind JSON: %v", err)
@@ -85,13 +81,42 @@ func TestJSON(t *testing.T) {
 		if data[0].Username != "Joseph Joestar" {
 			t.Fatalf("Incorrect data parsed expected %v received %v", records[0].Username, data[0].Username)
 		}
-		return nil
+
+		if len(ctx.Errors) > 0 {
+			t.Fatalf("Error returned by middleware: %v", ctx.ErrorStack())
+		}
+		ctx.JSON(http.StatusOK, data)
+		return nil, nil
+	})
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBuffer(jsonBody))
+	r.Header.Set("Context-Type", "application/json")
+
+	server.Register(testRouter)
+	server.server.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatal("Failed to encode JSON")
 	}
 
-	ctx.SetMiddlewares([]MiddleWareFunc{middleware})
-	ctx.Next()
+	var responseData []Record
+	if err := json.Unmarshal(w.Body.Bytes(), &responseData); err != nil {
+		t.Fatalf("Failed to Unmarshal JSON: %v", err)
+	}
 
-	if len(ctx.Errors) > 0 {
-		t.Fatalf("Error returned by middleware: %v", ctx.ErrorStack())
+	if len(responseData) != len(records) {
+		t.Fatalf("Expected %v records, got %v", len(records), len(responseData))
+	}
+
+	for i, record := range records {
+		if responseData[i].Username != record.Username {
+			t.Fatalf("Record %v username mismatch: expected %v, got %v",
+				i, record.Username, responseData[i].Username)
+		}
+		if responseData[i].Password != record.Password {
+			t.Fatalf("Record %v password mismatch: expected %v, got %v",
+				i, record.Password, responseData[i].Password)
+		}
 	}
 }

@@ -123,3 +123,71 @@ func TestMiddlewareRouter(t *testing.T) {
 		t.Fatalf("Invalid Request Body Got:%s", res.Body.String())
 	}
 }
+
+func TestMiddleware(t *testing.T) {
+	var results []string
+
+	middleware := func(ctx *Context) *Error {
+		results = append(results, "start")
+		ctx.Next()
+		results = append(results, "end")
+		return nil
+	}
+
+	server := New(":8000")
+	testRouter := NewRouter("/")
+	testRouter.Get("/test", func(ctx *Context) (*Data, *Error) {
+		results = append(results, "executing")
+		return nil, nil
+	}).Use(middleware)
+
+	server.Register(testRouter)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	res := httptest.NewRecorder()
+
+	server.server.ServeHTTP(res, req)
+
+	expected := []string{"start", "executing", "end"}
+
+	for i, val := range results {
+		if val != expected[i] {
+			t.Fatalf("Middleware execution order is incorrect. Exepected: %v, got: %v", expected, results)
+		}
+	}
+}
+
+func TestMiddlewareAbort(t *testing.T) {
+	var executionOrder []int8
+
+	middleware_1 := func(ctx *Context) *Error {
+		executionOrder = append(executionOrder, 1)
+		return ctx.AbortWithError("Testing testing 123", http.StatusInternalServerError)
+	}
+
+	middleware_2 := func(ctx *Context) *Error {
+		executionOrder = append(executionOrder, 2)
+		t.Fatal("This should get executed!")
+		return nil
+	}
+
+	server := New(":8000")
+	testRouter := NewRouter("/")
+
+	testRouter.Get("/test", func(ctx *Context) (*Data, *Error) {
+		executionOrder = append(executionOrder, 3)
+		t.Fatal("Handler function shouldn't get executed after any middleware returns error")
+		return nil, nil
+	}).Use(middleware_1, middleware_2)
+
+	server.Register(testRouter)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	res := httptest.NewRecorder()
+
+	server.server.ServeHTTP(res, req)
+
+	if len(executionOrder) != 1 || executionOrder[0] != 1 {
+		t.Fatal("Unexpected execution order of middlewares and handler function")
+	}
+}
