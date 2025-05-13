@@ -31,7 +31,7 @@ func (h *FileHandler) GetRoute() string {
 	return h.path
 }
 
-//nolint:unused // TODO: Should be used in a future commit
+// TODO: Should be used in a future commit
 // func (h *FileHandler) applyMiddleware(w http.ResponseWriter, r *http.Request) *Error {
 // 	for _, middleware := range h.middlewares {
 // 		if err := middleware(w, r); err != nil {

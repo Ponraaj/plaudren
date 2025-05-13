@@ -12,11 +12,10 @@ linters-settings:
       - performance
       - style
   govet:
-    check-shadowing: true
     enable:
       - fieldalignment
   nolintlint:
-    require-explanation: true 
+    require-explanation: true
     require-specific: true
   depguard:
     rules:

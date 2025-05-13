@@ -150,7 +150,7 @@ type TestAPI struct {
 }
 
 func (a *TestAPI) Register() {
-	a.Router.Get("/", a.TestHttpFunc)
+	a.Get("/", a.TestHttpFunc)
 }
 
 

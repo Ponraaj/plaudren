@@ -136,14 +136,14 @@ func TestMiddleware(t *testing.T) {
 
 	server := New(":8000")
 	testRouter := NewRouter("/")
-	testRouter.Get("/test", func(ctx *Context) (*Data, *Error) {
+	testRouter.Get("/test", func(_ *Context) (*Data, *Error) {
 		results = append(results, "executing")
 		return nil, nil
 	}).Use(middleware)
 
 	server.Register(testRouter)
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	res := httptest.NewRecorder()
 
 	server.server.ServeHTTP(res, req)
@@ -160,12 +160,12 @@ func TestMiddleware(t *testing.T) {
 func TestMiddlewareAbort(t *testing.T) {
 	var executionOrder []int8
 
-	middleware_1 := func(ctx *Context) *Error {
+	middleware1 := func(ctx *Context) *Error {
 		executionOrder = append(executionOrder, 1)
 		return ctx.AbortWithError("Testing testing 123", http.StatusInternalServerError)
 	}
 
-	middleware_2 := func(ctx *Context) *Error {
+	middleware2 := func(_ *Context) *Error {
 		executionOrder = append(executionOrder, 2)
 		t.Fatal("This should get executed!")
 		return nil
@@ -174,15 +174,15 @@ func TestMiddlewareAbort(t *testing.T) {
 	server := New(":8000")
 	testRouter := NewRouter("/")
 
-	testRouter.Get("/test", func(ctx *Context) (*Data, *Error) {
+	testRouter.Get("/test", func(_ *Context) (*Data, *Error) {
 		executionOrder = append(executionOrder, 3)
 		t.Fatal("Handler function shouldn't get executed after any middleware returns error")
 		return nil, nil
-	}).Use(middleware_1, middleware_2)
+	}).Use(middleware1, middleware2)
 
 	server.Register(testRouter)
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	res := httptest.NewRecorder()
 
 	server.server.ServeHTTP(res, req)

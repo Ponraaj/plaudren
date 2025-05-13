@@ -48,7 +48,7 @@ func (route *Route) GetRoute() string {
 // return the http handler for the routes
 // handles the encoding (json,grpc...)
 //
-//nolint:errcheck // TODO: Error handling will be added in a future commit
+// TODO: Error handling will be added in a future commit
 func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := NewContext(w, r)
@@ -56,7 +56,7 @@ func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 		handlers := make([]MiddleWareFunc, len(route.middlewares)+1)
 		copy(handlers, route.middlewares)
 
-		handlers[len(route.middlewares)] = func(c *Context) *Error {
+		handlers[len(route.middlewares)] = func(ctx *Context) *Error {
 			data, err := route.httpfunc(ctx)
 			if err != nil {
 				ctx.JSON(err.code, err)
