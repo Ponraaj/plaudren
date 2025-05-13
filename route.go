@@ -1,7 +1,6 @@
 package plaud
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -46,43 +45,38 @@ func (route *Route) GetRoute() string {
 	return fmt.Sprintf("%s %s", route.method, route.path)
 }
 
-// applies a set of all middlware to a route
-func (route *Route) applyMiddlware(w http.ResponseWriter, r *http.Request) *Error {
-	for _, middleware := range route.middlewares {
-		if err := middleware(w, r); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // return the http handler for the routes
 // handles the encoding (json,grpc...)
 //
-//nolint:errcheck // TODO: Error handling will be added in a future commit
+// TODO: Error handling will be added in a future commit
 func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// handling middlewares
-		if err := route.applyMiddlware(w, r); err != nil {
-			w.WriteHeader(err.code)
-			// TODO: handle error below
-			// have a default logger with the router
-			json.NewEncoder(w).Encode(err)
+		ctx := NewContext(w, r)
 
-			return
+		handlers := make([]MiddleWareFunc, len(route.middlewares)+1)
+		copy(handlers, route.middlewares)
+
+		handlers[len(route.middlewares)] = func(ctx *Context) *Error {
+			data, err := route.httpfunc(ctx)
+			if err != nil {
+				ctx.JSON(err.code, err)
+				return err
+			}
+
+			if data != nil {
+				ctx.JSON(data.code, data)
+			}
+
+			return nil
 		}
-		data, err := route.httpfunc(w, r)
-		// dont ask y coz i don't
-		if err != nil {
-			w.WriteHeader(err.code)
+		ctx.SetMiddlewares(handlers)
+		// handling middlewares
+		ctx.Next()
+		if len(ctx.Errors) > 0 {
+			err := ctx.Errors[len(ctx.Errors)-1]
 			// TODO: handle error below
 			// have a default logger with the router
-			json.NewEncoder(w).Encode(err)
-		} else if data != nil {
-			w.WriteHeader(data.code)
-			// TODO: handle error below
-			// have a default logger with the router
-			json.NewEncoder(w).Encode(data)
+			ctx.JSON(err.code, err)
 		}
 	}
 }
@@ -90,6 +84,7 @@ func (route *Route) GetHandleFunc() func(http.ResponseWriter, *http.Request) {
 func (route *Route) GetHandler() http.Handler {
 	return nil
 }
+
 func NewRoute(method HTTPMethod, path string, httpfunc HTTPFunc) (*Route, error) {
 	if path == "" {
 		path = "/"
