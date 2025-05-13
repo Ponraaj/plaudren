@@ -153,7 +153,6 @@ func (a *TestAPI) Register() {
 	a.Get("/", a.TestHttpFunc)
 }
 
-
 func (a *TestAPI) TestHttpFunc(ctx *Context) (*Data, *Error) {
 	_, err := ctx.Write([]byte("ok"))
 	if err != nil {
